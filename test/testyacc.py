@@ -1,15 +1,13 @@
-import sys
-sys.path.insert(0, '../')
 
-from icestream.iceyacc import parse
+from icestream.builder import build
 
 if __name__ == '__main__':
     import sys
 
-    if len(sys.argv) != 2:
-        print "usage: icelex filename"
-        sys.exit(1)
+    #if len(sys.argv) != 2:
+     #   print "usage: icelex filename"
+     #   sys.exit(1)
 
-    ret = parse(sys.argv[1])
+    ret = build("test/test.ice")
     print "parse done"
     print ret

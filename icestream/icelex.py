@@ -1,6 +1,5 @@
 import ply.lex as lex
 from ply.lex import TOKEN
-from .context import Context
 
 tokens = [
     'NUMBER',
@@ -16,6 +15,7 @@ tokens = [
     'MACRO_ENDIF',
     'END',
     'DOMAIN',
+    'COMMENT',
 ]
 
 reserved = {
@@ -38,7 +38,6 @@ def IceLexer():
 
     t_ignore = ' \t'
 
-    t_ignore_COMMENT = '//.*'
 
     t_END = ';+'
     t_DOMAIN = '::'
@@ -51,6 +50,10 @@ def IceLexer():
     t_MACRO_DEFINE = '\#define'
     t_MACRO_ENDIF  = '\#endif'
     t_MACRO_INCLUDE= '\#include'
+
+    def t_COMMENT(t):
+        r"""(/\*(.|\n)*\*/)|(//.*)"""
+        pass
 
     def t_BOOL(t):
         r'(true|false)'
@@ -80,18 +83,26 @@ def IceLexer():
         return t
 
     def t_NUMBER(t):
-        r"(0x[A-Fa-f0-9]+|\d+)"
-        if t.value.startswith('0x'):
-            t.value = int(t.value, 16)
+        r"""([+-]?)(0x[A-Fa-f0-9]+|\d+)"""
+
+        num = t.value
+        sign = 1
+        if num[0] in '+-':
+            if num[0] == '-':
+                sign = -1
+            num = num[1:]
+
+        if num.startswith('0x'):
+            num = int(num, 16)
         else:
-            t.value = int(t.value)
+            num = int(num)
+        t.value = sign * num
         return t
 
     @TOKEN(id_re)
     def t_ID(t):
         t.type = reserved.get(t.value, 'ID')
         return t
-
 
     def t_newline(t):
         r'\n+'
@@ -102,5 +113,4 @@ def IceLexer():
         t.lexer.skip(1)
 
     lx = lex.lex()
-    lx.ctx = Context()
     return lx
