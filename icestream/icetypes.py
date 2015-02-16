@@ -91,7 +91,16 @@ class IceModule(types.ModuleType):
     pass
 
 
+class StructMeta(type):
+    def __new__(cls, name, bases, attrs):
+        print "%s meta call" % name
+        print attrs
+        print bases
+        return type.__new__(cls, name, bases, attrs)
+
+
 class IceStruct(object):
+    __metaclass__ = StructMeta
     pass
 
 

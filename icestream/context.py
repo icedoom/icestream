@@ -49,21 +49,24 @@ class Context:
     def __getitem__(self, item):
         return getattr(self.cur, item)
 
-    def push(self, key, val):
-        setattr(self.cur, key, val)
+    def push(self, item):
+        con = item.con_type()
+        setattr(self.cur, item.name, con)
 
-        info = Info(key, val)
+        info = Info(item.name, con)
 
         self.__path.append(info)
 
         old, cur = self._set_cur()
+
+        self.set_ice_mod(item.ice_mod_name())
+
         return cur
 
     def pop(self):
         del self.__path[-1]
 
         old, cur = self._set_cur()
-
         return old
 
     def _set_cur(self):
@@ -110,13 +113,25 @@ class Context:
     def cur_name(self):
         return str(self.cur)
 
+    def set_ice_mod(self, name):
+        if len(self.__path) == 2:
+            mod = __import__(name, globals())
+        else:
+            pre = self.__path[-2]._ice_mod
+            mod = getattr(pre, name)
+
+        self["_ice_mod"] = mod
+
 
 def stack_ctx(func):
     @wraps(func)
     def build(self, ctx):
-        ctx.push(self.name, self.con_type())
-        func(self, ctx)
+        ctx.push(self)
+
+        mod = func(self, ctx)
+
         ctx.pop()
+        return mod
 
     return build
 

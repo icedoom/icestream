@@ -18,6 +18,9 @@ class Module:
     def con_type(self):
         return IceModule(self.name)
 
+    def ice_mod_name(self):
+        return self.name
+
 
 class VarType:
     def __init__(self, name, domain=None):
@@ -80,7 +83,9 @@ class Item(object):
         raise NotImplementError(self.name)
 
     def _add_item(self, ctx):
-        ctx[self._item_name()] = self._build(ctx)
+        mod = self._build(ctx)
+        ctx[self._item_name()] = mod
+        return mod
 
     def _item_name(self):
         return self.name
@@ -107,6 +112,10 @@ class CustomType(Item):
 
 
 class MemberConType(CustomType):
+    class DataContainer:
+        def __init__(self):
+            pass
+
     def __init__(self, name, members=None):
         super(MemberConType, self).__init__(name)
         self.members = members or []
@@ -131,6 +140,12 @@ class MemberConType(CustomType):
             self._build_member(member, ctx)
 
         self._after_build_members(ctx)
+        attr = ctx.mod().__dict__
+
+        return type(self.name, (self.impl_cls(),), attr)
+
+    def impl_cls(self):
+        raise NotImplementError("not implement ")
 
     def _build_member(self, member, ctx):
         self._before_build_member(member, ctx)
@@ -138,7 +153,10 @@ class MemberConType(CustomType):
         self._after_build_member(member, ctx)
 
     def con_type(self):
-        raise NotImplementError("not implement")
+        return MemberConType.DataContainer()
+
+    def ice_mod_name(self):
+        return self.name
 
 
 class TypeDefine(CustomType):
@@ -167,20 +185,25 @@ class Struct(MemberConType):
 
     def __init__(self, name, members=None):
         super(Struct, self).__init__(name, members)
+        self._member_names = []
 
     def _after_build_member(self, member, ctx):
         ctx[member.name] = None
+        self._member_names.append(member.name)
 
-    def con_type(self):
-        return type(self.name, (IceStruct, ), {})
+    def _after_build_members(self, ctx):
+        ctx["_member_names"] = self._member_names
+
+    def impl_cls(self):
+        return IceStruct
 
 
 class Enum(MemberConType):
     def __init__(self, name, members=None):
         super(Enum, self).__init__(name, members)
 
-    def con_type(self):
-        return type(self.name, (IceEnum, ), {})
+    def impl_cls(self):
+        return IceEnum
 
 
 class EnumMember(CustomType):
@@ -205,8 +228,11 @@ class Interface(MemberConType):
     def __init__(self, name, members=None):
         super(Interface, self).__init__(name, members)
 
-    def con_type(self):
-        return type(self.name, (IceInterface, ), {})
+    def impl_cls(self):
+        return IceInterface
+
+    def ice_mod_name(self):
+        return "%sPrx" % self.name
 
 
 class MemberFunc(MemberConType):
@@ -234,8 +260,8 @@ class MemberFunc(MemberConType):
         ctx["_ice_out_params"] = self.out_param_list
         ctx["_type__return_"] = self.ret_type.get_type(ctx)
 
-    def con_type(self):
-        return type(self.name, (IceInterfaceFunction, ), {})
+    def impl_cls(self):
+        return IceInterfaceFunction
 
 
 class Param(Member):
@@ -282,7 +308,7 @@ class Sequence(Container):
 
     def gen_cls(self, ctx):
         item_type = self[0].get_type(ctx)
-        return type(self.name, (IceSequence, ), {'val_type': item_type})
+        return type(self.name, (IceSequence, ), {'_val_type': item_type})
 
 
 class Dictionary(Container):
@@ -291,8 +317,8 @@ class Dictionary(Container):
 
     def gen_cls(self, ctx):
         dct = {
-            "key_type": self[0].get_type(ctx),
-            "val_type": self[1].get_type(ctx)
+            "_key_type": self[0].get_type(ctx),
+            "_val_type": self[1].get_type(ctx)
         }
 
         return type(self.name, (IceDictionary,), dct)

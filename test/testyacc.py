@@ -10,4 +10,4 @@ if __name__ == '__main__':
 
     ret = build("test/test.ice")
     print "parse done"
-    print ret
+    print dir(ret)

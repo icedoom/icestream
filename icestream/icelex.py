@@ -15,7 +15,6 @@ tokens = [
     'MACRO_ENDIF',
     'END',
     'DOMAIN',
-    'COMMENT',
 ]
 
 reserved = {
@@ -37,7 +36,7 @@ def IceLexer():
     literals = '''<>[]{},()='''
 
     t_ignore = ' \t'
-
+    t_ignore_COMMENT = r'(/\*(.|\n)*\*/)|(//.*)'
 
     t_END = ';+'
     t_DOMAIN = '::'
@@ -50,10 +49,6 @@ def IceLexer():
     t_MACRO_DEFINE = '\#define'
     t_MACRO_ENDIF  = '\#endif'
     t_MACRO_INCLUDE= '\#include'
-
-    def t_COMMENT(t):
-        r"""(/\*(.|\n)*\*/)|(//.*)"""
-        pass
 
     def t_BOOL(t):
         r'(true|false)'

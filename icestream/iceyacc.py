@@ -54,7 +54,7 @@ def p_include_modules(p):
 
 def p_include_module(p):
     """include_module : MACRO_INCLUDE ICE_FILE"""
-    p[0] = parse(p[2][1])
+    p[0] = parse(p[2][1], p.parser._ice_file_locator)
 
 
 def p_modules(p):
@@ -256,8 +256,9 @@ def p_error(p):
     raise SyntaxError(" ".join(s))
 
 
-def parse(file_name):
+def parse(file_name, file_locator):
     print "parse %s" % file_name
     parser = yacc.yacc()
+    parser._ice_file_locator = file_locator
     lx = IceLexer()
-    return parser.parse(open(file_name).read(), lexer=lx)
+    return parser.parse(file_locator.read(file_name), lexer=lx)
